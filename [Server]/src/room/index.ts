@@ -3,7 +3,7 @@ import { v4 as uuidV4 } from "uuid";
 
 const rooms: Record<string, string[]> = {};
 
-interface IRoomProps {
+interface IRoomParams {
   roomId: string;
   peerId: string;
 }
@@ -16,7 +16,7 @@ export const roomHandler = (socket: Socket) => {
     console.log("user create the room");
   };
 
-  const joinRoom = ({ roomId, peerId }: IRoomProps) => {
+  const joinRoom = ({ roomId, peerId }: IRoomParams) => {
     if (rooms[roomId]) {
       console.log("user joined the room", roomId, peerId);
       rooms[roomId].push(peerId);
@@ -25,9 +25,22 @@ export const roomHandler = (socket: Socket) => {
         roomId,
         participants: rooms[roomId],
       });
-    }
+    };
+
+    socket.on("disconnect", ()=>{
+        console.log("user left the room", peerId);
+        leaveRoom({roomId, peerId})
+    })
+
   };
+
+  const leaveRoom = ({roomId, peerId}:IRoomParams)=>{
+    rooms[roomId] = rooms[roomId].filter((id)=> id !== peerId);
+    socket.to(roomId).emit("user-disconnected", peerId);
+  }
 
   socket.on("join-room", joinRoom);
   socket.on("create-room", createRoom);
+
+ 
 };
